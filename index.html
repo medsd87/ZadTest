@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dailymotion Custom Player</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    #player-container {
+      position: relative;
+      height: 56.25vw;
+      max-height: 100vh;
+      overflow: hidden;
+    }
+
+    #player-container iframe {
+      pointer-events: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #controls-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #play-pause-button,
+    #seek-slider,
+    #volume-slider {
+      margin: 5px;
+    }
+
+    #play-pause-button {
+      color: white;
+      background-color: transparent;
+      border: none;
+      font-size: 16px;
+      padding: 5px;
+      cursor: pointer;
+    }
+
+    #seek-slider {
+      flex: 1;
+      margin: 0 10px;
+      width: auto;
+    }
+
+    #volume-slider {
+      width: 100px;
+      padding: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="player-container">
+    <iframe id="dailymotion-iframe" frameborder="0" allow="autoplay; fullscreen"></iframe>
+  </div>
+
+  <div id="controls-container">
+    <button id="play-pause-button"></button>
+    <input type="range" id="seek-slider" min="0" max="100" step="1">
+    <div id="volume-slider-container">
+      <input type="range" id="volume-slider" min="0" max="100" step="1" value="100">
+    </div>
+  </div>
+
+  <script src="https://api.dmcdn.net/all.js"></script>
+  <script>
+    var playerIframe = document.getElementById('dailymotion-iframe');
+    var playPauseButton = document.getElementById('play-pause-button');
+    var seekSlider = document.getElementById('seek-slider');
+    var volumeSlider = document.getElementById('volume-slider');
+    var player;
+
+    function initializePlayer(videoId) {
+      player = DM.player(playerIframe, {
+        video: videoId,
+        width: "100%",
+        height: "100%",
+        params: {
+          autoplay: true,
+          controls: false,
+          queue: false,
+          sharing: false,
+          logo: false,
+          startScreenInfo: false,
+          'queue-enable': 0,
+          'queue-autoplay-next': 0,
+          muted: false
+        }
+      });
+
+      player.addEventListener("apiready", function () {
+        updatePlayPauseButton();
+        updateSeekSlider();
+        updateVolumeSlider();
+      });
+
+      player.addEventListener("timeupdate", function (event) {
+        seekSlider.value = (event.target.currentTime / event.target.duration) * 100;
+      });
+
+      player.addEventListener("volumechange", function (event) {
+        volumeSlider.value = event.target.volume * 100;
+      });
+    }
+
+    function playPause() {
+      if (player.paused) {
+        player.play();
+      } else {
+        player.pause();
+      }
+      updatePlayPauseButton();
+    }
+
+    function seekTo(seconds) {
+      player.seek(seconds);
+    }
+
+    function setVolume(volume) {
+      player.setVolume(volume);
+    }
+
+    function updatePlayPauseButton() {
+      if (player.paused) {
+        playPauseButton.innerHTML = '<i class="fas fa-play"></i>';
+      } else {
+        playPauseButton.innerHTML = '<i class="fas fa-pause"></i>';
+      }
+    }
+
+    function updateSeekSlider() {
+      seekSlider.value = 0;
+    }
+
+    function updateVolumeSlider() {
+      volumeSlider.value = player.volume * 100;
+    }
+
+    // Get the video ID from the URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoId = urlParams.get('videoid');
+
+    // Initialize the player with the provided video ID
+    initializePlayer(videoId);
+
+    // Event listeners for the custom controls
+    playPauseButton.addEventListener('click', playPause);
+
+    seekSlider.addEventListener('input', function () {
+      var duration = player.duration;
+      var seekTime = (this.value / 100) * duration;
+      seekTo(seekTime);
+    });
+
+    volumeSlider.addEventListener('input', function () {
+      setVolume(this.value / 100);
+    });
+  </script>
+</body>
+</html>
